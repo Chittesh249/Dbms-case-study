@@ -18,7 +18,7 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
 
-  const handleSendMessage = (message) => {
+  const handleSendMessage = async (message) => {
     const newMessage = {
       text: message,
       isUser: true,
@@ -27,15 +27,54 @@ function App() {
     
     setMessages(prev => [...prev, newMessage]);
     
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = {
-        text: `I received your message: "${message}". This is a simulated response from the AI assistant.`,
+    try {
+      // Add loading message
+      const loadingMessage = {
+        text: "Thinking...",
         isUser: false,
         timestamp: new Date(),
+        isLoading: true,
       };
-      setMessages(prev => [...prev, aiResponse]);
-    }, 1000);
+      setMessages(prev => [...prev, loadingMessage]);
+      
+      // Call backend API
+      const response = await fetch('http://localhost:8001/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: message }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Remove loading message and add actual response
+      setMessages(prev => {
+        const withoutLoading = prev.filter(msg => !msg.isLoading);
+        return [...withoutLoading, {
+          text: data.reply,
+          isUser: false,
+          timestamp: new Date(),
+        }];
+      });
+      
+    } catch (error) {
+      console.error('Error calling backend:', error);
+      
+      // Remove loading message and add error response
+      setMessages(prev => {
+        const withoutLoading = prev.filter(msg => !msg.isLoading);
+        return [...withoutLoading, {
+          text: `Sorry, I encountered an error: ${error.message}. Please make sure the backend server is running on http://localhost:8001`,
+          isUser: false,
+          timestamp: new Date(),
+        }];
+      });
+    }
   };
 
   return (
