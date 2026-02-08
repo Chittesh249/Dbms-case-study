@@ -1,6 +1,0 @@
-fastapi
-uvicorn
-pymilvus
-openai
-python-dotenv
-httpx
